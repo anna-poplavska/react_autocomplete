@@ -13,6 +13,7 @@ export const App: React.FC<Props> = ({ debounceDelay = 300 }) => {
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [query, setQuery] = useState('');
   const [appliedQuery, setAppliedQuery] = useState('');
+  const [isActive, setIsActive] = useState(false);
 
   const applyQuery = useCallback(debounce(setAppliedQuery, debounceDelay), [
     debounceDelay,
@@ -24,7 +25,21 @@ export const App: React.FC<Props> = ({ debounceDelay = 300 }) => {
     setSelectedPerson(null);
   };
 
+  const handleFocus = () => {
+    setIsActive(true);
+  };
+
+  const handleSelect = (person: Person) => {
+    setSelectedPerson(person);
+    setQuery(person.name);
+    setIsActive(false);
+  };
+
   const filteredPeople = useMemo(() => {
+    if (appliedQuery.trim() === '') {
+      return people;
+    }
+
     return people.filter(person => {
       return person.name
         .toLowerCase()
@@ -32,8 +47,6 @@ export const App: React.FC<Props> = ({ debounceDelay = 300 }) => {
         .includes(appliedQuery.toLowerCase().trim());
     });
   }, [people, appliedQuery]);
-
-  const showNoSuggestionsMessage = query && filteredPeople.length === 0;
 
   useEffect(() => {
     if (query.trim() === '') {
@@ -50,7 +63,7 @@ export const App: React.FC<Props> = ({ debounceDelay = 300 }) => {
             : `${selectedPerson.name} (${selectedPerson.born} - ${selectedPerson.died})`}
         </h1>
 
-        <div className="dropdown is-active">
+        <div className={`dropdown${isActive ? ' is-active' : ''}`}>
           <div className="dropdown-trigger">
             <input
               type="text"
@@ -59,6 +72,7 @@ export const App: React.FC<Props> = ({ debounceDelay = 300 }) => {
               data-cy="search-input"
               value={query}
               onChange={handleInput}
+              onFocus={handleFocus}
             />
           </div>
 
@@ -69,9 +83,7 @@ export const App: React.FC<Props> = ({ debounceDelay = 300 }) => {
                   className="dropdown-item"
                   data-cy="suggestion-item"
                   key={person.slug}
-                  onClick={() => {
-                    setSelectedPerson(person);
-                  }}
+                  onClick={() => handleSelect(person)}
                 >
                   <p className="has-text-link">{person.name}</p>
                 </div>
@@ -80,7 +92,7 @@ export const App: React.FC<Props> = ({ debounceDelay = 300 }) => {
           </div>
         </div>
 
-        {showNoSuggestionsMessage && (
+        {query && filteredPeople.length === 0 && (
           <div
             className="
             notification
